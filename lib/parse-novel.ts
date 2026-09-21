@@ -48,12 +48,52 @@ function slugify(input: string): string {
   return `imported-${hash.toString(36) || "novel"}`;
 }
 
+const BLOCKED_HOSTS = new Set(["freewebnovel.com", "www.freewebnovel.com"]);
+
+function hostFrom(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const text = value.trim().toLowerCase();
+  try {
+    const url = text.includes("://") ? new URL(text) : new URL(`https://${text}`);
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return text.replace(/^www\./, "") || null;
+  }
+}
+
+export function isBlockedSource(raw: unknown): boolean {
+  if (!isRecord(raw)) return false;
+  const suspects: unknown[] = [raw.source, raw.startUrl, raw.url];
+  if (Array.isArray(raw.visitedUrls)) suspects.push(...raw.visitedUrls);
+  if (Array.isArray(raw.pages)) {
+    for (const page of raw.pages) {
+      if (isRecord(page)) suspects.push(page.url, page.source);
+    }
+  }
+  for (const suspect of suspects) {
+    const host = hostFrom(suspect);
+    if (host && BLOCKED_HOSTS.has(host)) return true;
+    if (typeof suspect === "string" && /freewebnovel\.com/i.test(suspect)) return true;
+  }
+  return false;
+}
+
 function splitParagraphs(text: string): Localized[] {
-  return text
+  const doubled = text
     .split(/\n\s*\n/g)
     .map((part) => part.trim())
-    .filter(Boolean)
-    .map((part) => ({ ar: part, en: part }));
+    .filter(Boolean);
+  const parts =
+    doubled.length >= 2 ? doubled : text.split(/\n+/g).map((part) => part.trim()).filter(Boolean);
+  return parts.map((part) => ({ ar: part, en: part }));
+}
+
+function cleanChapterTitle(title: string, bookTitle: string): string {
+  let cleaned = title.trim().replace(/\s*-\s*Free Web Novels?\s*$/i, "");
+  if (bookTitle && cleaned.toLowerCase().startsWith(bookTitle.toLowerCase())) {
+    cleaned = cleaned.slice(bookTitle.length).replace(/^\s*[-–:]\s*/, "");
+  }
+  return cleaned.trim() || title.trim();
 }
 
 function paragraphsFrom(chapter: Record<string, unknown>): Localized[] {
@@ -73,7 +113,7 @@ function paragraphsFrom(chapter: Record<string, unknown>): Localized[] {
   return out.filter((item) => item.ar.trim() || item.en.trim());
 }
 
-function parseChapter(raw: unknown, index: number): Chapter | null {
+function parseChapter(raw: unknown, index: number, bookTitle = ""): Chapter | null {
   if (typeof raw === "string") {
     const paragraphs = splitParagraphs(raw);
     if (paragraphs.length === 0) return null;
@@ -89,10 +129,14 @@ function parseChapter(raw: unknown, index: number): Chapter | null {
   const id =
     (typeof raw.id === "string" && raw.id.trim()) ||
     (typeof raw.slug === "string" && raw.slug.trim()) ||
+    (typeof raw.chapterNumber === "number" ? String(raw.chapterNumber) : "") ||
+    (typeof raw.number === "number" ? String(raw.number) : "") ||
     String(index + 1);
+  const rawTitle = localized(raw.title ?? raw.name, `الفصل ${index + 1}`);
+  const cleaned = cleanChapterTitle(rawTitle.ar, bookTitle);
   return {
     id,
-    title: localized(raw.title ?? raw.name, `الفصل ${index + 1}`),
+    title: { ar: cleaned, en: cleanChapterTitle(rawTitle.en, bookTitle) || cleaned },
     paragraphs,
   };
 }
@@ -114,16 +158,19 @@ export function parseOneNovel(raw: unknown, index = 0): Novel | null {
   if (!title.ar && !title.en) return null;
   const chapterSource = Array.isArray(raw.chapters)
     ? raw.chapters
-    : Array.isArray(raw.stories)
-      ? raw.stories
-      : null;
+    : Array.isArray(raw.pages)
+      ? raw.pages
+      : Array.isArray(raw.stories)
+        ? raw.stories
+        : null;
   if (!chapterSource) return null;
   const chapters = chapterSource
-    .map((chapter, chapterIndex) => parseChapter(chapter, chapterIndex))
+    .map((chapter, chapterIndex) => parseChapter(chapter, chapterIndex, title.en || title.ar))
     .filter((chapter): chapter is Chapter => chapter !== null);
   if (chapters.length === 0) return null;
   const slugSource =
     (typeof raw.slug === "string" && raw.slug.trim()) ||
+    (typeof raw.id === "string" && raw.id.trim()) ||
     title.en ||
     title.ar;
   return {
@@ -147,14 +194,17 @@ export function parseNovelJson(input: string): ParseResult {
   } catch {
     return { ok: false, error: "invalid-json" };
   }
-  const list = Array.isArray(data)
+  const candidates = Array.isArray(data)
     ? data
     : isRecord(data) && Array.isArray(data.novels)
       ? data.novels
       : isRecord(data) && Array.isArray(data.stories)
         ? data.stories
         : [data];
-  const novels = list
+  if (candidates.some((item) => isBlockedSource(item))) {
+    return { ok: false, error: "blocked-source" };
+  }
+  const novels = candidates
     .map((item, index) => parseOneNovel(item, index))
     .filter((item): item is Novel => item !== null);
   if (novels.length === 0) return { ok: false, error: "no-novels" };

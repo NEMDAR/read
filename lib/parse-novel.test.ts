@@ -40,8 +40,41 @@ test("parses bilingual objects and a novels array", () => {
   assert.equal(result.novels[0].chapters[0].paragraphs[0].en, "English text");
 });
 
-test("rejects empty or chapterless JSON", () => {
-  assert.equal(parseNovelJson("").ok, false);
-  assert.equal(parseNovelJson("{not json").ok, false);
-  assert.equal(parseNovelJson('{"title":"x","chapters":[]}').ok, false);
+test("parses pages[] dumps with chapterNumber", () => {
+  const result = parseNovelJson(`{
+    "id": "sample-1",
+    "title": "سقف من نحاس",
+    "pages": [
+      {
+        "chapterNumber": 1,
+        "number": 1,
+        "title": "سقف من نحاس - Chapter 1: طرقات فوق الرأس",
+        "text": "سطر أول.\\nسطر ثان."
+      },
+      {
+        "chapterNumber": 2,
+        "number": 2,
+        "title": "Chapter 2: دفتر السقف",
+        "text": "فقرة واحدة."
+      }
+    ]
+  }`);
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.novels[0].chapters.length, 2);
+  assert.equal(result.novels[0].chapters[0].id, "1");
+  assert.equal(result.novels[0].chapters[0].title.ar.includes("طرقات فوق الرأس"), true);
+  assert.ok(result.novels[0].chapters[0].paragraphs.length >= 2);
+});
+
+test("rejects aggregator dumps from freewebnovel", () => {
+  const result = parseNovelJson(`{
+    "title": "Anything",
+    "source": "freewebnovel.com",
+    "startUrl": "https://freewebnovel.com/novel/example/chapter-1",
+    "pages": [{ "chapterNumber": 1, "title": "Ch 1", "text": "hello" }]
+  }`);
+  assert.equal(result.ok, false);
+  if (result.ok) return;
+  assert.equal(result.error, "blocked-source");
 });

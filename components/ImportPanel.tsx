@@ -20,7 +20,7 @@ export function ImportPanel({ compact = false }: { compact?: boolean }) {
     const result = parseNovelJson(text);
     if (!result.ok) {
       setOk("");
-      setError(t("importError"));
+      setError(result.error === "blocked-source" ? t("importBlocked") : t("importError"));
       return;
     }
     const [first] = addImported(result.novels);
@@ -34,7 +34,7 @@ export function ImportPanel({ compact = false }: { compact?: boolean }) {
       setError(t("importError"));
       return;
     }
-    if (file.size > 2_000_000) {
+    if (file.size > 8_000_000) {
       setError(t("importError"));
       return;
     }
@@ -115,6 +115,19 @@ export function ImportPanel({ compact = false }: { compact?: boolean }) {
           {ok}
         </p>
       ) : null}
+      <pre className="mt-8 overflow-auto rounded-2xl bg-[color:var(--ink)] p-4 text-xs leading-6 text-[color:var(--paper)]" data-testid="import-template">
+{`{
+  "title": "اسم الرواية",
+  "pages": [
+    {
+      "chapterNumber": 1,
+      "number": 1,
+      "title": "Chapter 1: عنوان الفصل",
+      "text": "نص الفصل..."
+    }
+  ]
+}`}
+      </pre>
     </section>
   );
 }
