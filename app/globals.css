@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f3ead8;
+  --ink: #231c16;
+  --muted: #6d6256;
+  --line: #d8cbb4;
+  --accent: #9a3b24;
+  --background: var(--paper);
+  --foreground: var(--ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-ui), "IBM Plex Sans Arabic", sans-serif;
+  --font-display: var(--font-display), "Amiri", serif;
+}
+
+html,
+body {
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-ui), "IBM Plex Sans Arabic", sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), "Amiri", serif;
+}
+
+.mark {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid currentColor;
+  border-bottom: 0;
+  border-radius: 999px 999px 4px 4px;
+  display: inline-block;
+}
+
+.reader {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.reader-paper {
+  --reader-bg: #f7f1e3;
+  --reader-fg: #1f1a14;
+  --reader-muted: #6a5d4e;
+  --reader-chip: rgba(31, 26, 20, 0.08);
+}
+
+.reader-warm {
+  --reader-bg: #f3e2c7;
+  --reader-fg: #3b2a1a;
+  --reader-muted: #7a5a3a;
+  --reader-chip: rgba(59, 42, 26, 0.1);
+}
+
+.reader-night {
+  --reader-bg: #12110e;
+  --reader-fg: #e8dcc8;
+  --reader-muted: #b3a38c;
+  --reader-chip: rgba(232, 220, 200, 0.1);
+}
+
+.reader-chrome {
+  background: color-mix(in srgb, var(--reader-bg) 88%, black);
+  color: var(--reader-fg);
+  border-bottom: 1px solid color-mix(in srgb, var(--reader-fg) 12%, transparent);
+}
+
+.reader-article {
+  flex: 1;
+  overflow: auto;
+  background: var(--reader-bg);
+  color: var(--reader-fg);
+  height: 100dvh;
+}
+
+.reader-body {
+  font-family: var(--font-display), "Amiri", var(--font-reading), serif;
+  line-height: 2;
+}
+
+.reader-font-sm .reader-body {
+  font-size: 1.05rem;
+}
+
+.reader-font-md .reader-body {
+  font-size: 1.25rem;
+}
+
+.reader-font-lg .reader-body {
+  font-size: 1.5rem;
+}
+
+.reader-body p + p {
+  margin-top: 1.25em;
+}
+
+.reader-chip {
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  background: var(--reader-chip);
+}
+
+.reader-chip.is-active {
+  outline: 1px solid currentColor;
+}
+
+.reader-nav {
+  border-radius: 999px;
+  padding: 0.7rem 1.1rem;
+  background: var(--reader-chip);
+  color: inherit;
+}
