@@ -46,13 +46,13 @@ export function NovelDetails({ novel }: { novel: Novel }) {
       </header>
 
       <h2 className="mt-8 mb-3 font-display text-2xl">{t("chapters")}</h2>
-      <ol className="divide-y divide-[color:var(--line)] rounded-3xl border border-[color:var(--line)] bg-white/50">
+      <ol className="divide-y divide-[color:var(--line)] overflow-hidden rounded-3xl border border-[color:var(--line)] bg-white/50">
         {novel.chapters.map((chapter, index) => (
           <li key={chapter.id}>
             <Link
               href={`/n/${novel.slug}/${chapter.id}`}
               data-testid={`chapter-link-${chapter.id}`}
-              className="flex items-center justify-between gap-4 px-4 py-4 hover:bg-black/5"
+              className="flex items-center justify-between gap-4 px-4 py-5 hover:bg-black/5"
             >
               <span>
                 <span className="block text-xs text-[color:var(--muted)]">
