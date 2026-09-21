@@ -23,6 +23,7 @@ export type Novel = {
     motif: "gate" | "orchid" | "moon";
   };
   chapters: Chapter[];
+  imported?: boolean;
 };
 
 export type NovelProgress = {

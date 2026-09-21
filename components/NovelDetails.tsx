@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getChapter } from "@/content";
+import { removeImported } from "@/lib/imported";
 import { percentForNovel, readStore } from "@/lib/progress";
 import type { Novel } from "@/lib/types";
 import { useLanguage } from "./LanguageProvider";
@@ -9,6 +11,7 @@ import { useMounted } from "./useMounted";
 
 export function NovelDetails({ novel }: { novel: Novel }) {
   const { locale, t } = useLanguage();
+  const router = useRouter();
   const mounted = useMounted();
   const saved = mounted ? readStore().novels[novel.slug] : undefined;
   const savedChapter = saved ? getChapter(novel, saved.chapterId) : undefined;
@@ -25,7 +28,10 @@ export function NovelDetails({ novel }: { novel: Novel }) {
         className="mt-4 overflow-hidden rounded-3xl p-6 text-[color:var(--paper)]"
         style={{ background: novel.cover.background }}
       >
-        <p className="text-sm opacity-80">{novel.genre[locale]}</p>
+        <p className="text-sm opacity-80">
+          {novel.genre[locale]}
+          {novel.imported ? ` · ${t("imported")}` : ""}
+        </p>
         <h1 className="mt-2 font-display text-4xl leading-tight">{novel.title[locale]}</h1>
         <p className="mt-2 opacity-90">{novel.author[locale]}</p>
         <p className="mt-4 max-w-xl text-sm leading-7 opacity-90">{novel.synopsis[locale]}</p>
@@ -41,6 +47,18 @@ export function NovelDetails({ novel }: { novel: Novel }) {
             <span className="text-sm opacity-80">
               {t("progress")}: {percentForNovel(novel, saved)}%
             </span>
+          ) : null}
+          {novel.imported ? (
+            <button
+              type="button"
+              className="text-sm opacity-80 underline"
+              onClick={() => {
+                removeImported(novel.slug);
+                router.push("/");
+              }}
+            >
+              {t("removeImported")}
+            </button>
           ) : null}
         </div>
       </header>

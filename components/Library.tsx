@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { novels } from "@/content";
 import { percentForNovel, readStore } from "@/lib/progress";
 import { useLanguage } from "./LanguageProvider";
+import { useLibraryNovels } from "./useLibraryNovels";
 import { useMounted } from "./useMounted";
 
 export function Library() {
   const { locale, t } = useLanguage();
   const mounted = useMounted();
+  const { find } = useLibraryNovels();
   const store = mounted ? readStore() : { last: null, novels: {} };
   const entries = Object.values(store.novels).sort((a, b) => b.updatedAt - a.updatedAt);
 
@@ -27,7 +28,7 @@ export function Library() {
       ) : (
         <ul className="mt-6 space-y-3" data-testid="library-list">
           {entries.map((progress) => {
-            const novel = novels.find((item) => item.slug === progress.novelSlug);
+            const novel = find(progress.novelSlug);
             if (!novel) return null;
             const chapter =
               novel.chapters.find((item) => item.id === progress.chapterId) ?? novel.chapters[0];

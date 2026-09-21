@@ -32,6 +32,13 @@ export function SiteHeader() {
           >
             {t("library")}
           </Link>
+          <Link
+            href="/import"
+            data-testid="import-link"
+            className={`rounded-full px-3 py-1.5 ${pathname.startsWith("/import") ? "bg-[color:var(--ink)] text-[color:var(--paper)]" : "hover:bg-black/5"}`}
+          >
+            {t("importJson")}
+          </Link>
           <button
             type="button"
             onClick={toggleLocale}

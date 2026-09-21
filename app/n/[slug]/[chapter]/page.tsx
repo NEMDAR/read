@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
-import { Reader } from "@/components/Reader";
+import { ChapterLoader } from "@/components/ChapterLoader";
 import { getChapter, getNovel, novels } from "@/content";
+
+export const dynamicParams = true;
 
 export function generateStaticParams() {
   return novels.flatMap((novel) =>
@@ -27,6 +28,6 @@ export default async function ChapterPage({
 }) {
   const { slug, chapter } = await params;
   const novel = getNovel(slug);
-  if (!novel || !getChapter(novel, chapter)) notFound();
-  return <Reader novel={novel} chapterId={chapter} />;
+  const bundled = novel && getChapter(novel, chapter) ? novel : undefined;
+  return <ChapterLoader slug={slug} chapterId={chapter} bundled={bundled} />;
 }

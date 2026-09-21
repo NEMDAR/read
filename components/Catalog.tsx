@@ -2,21 +2,40 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { novels, searchNovels } from "@/content";
 import { percentForNovel, readStore } from "@/lib/progress";
-import type { NovelProgress } from "@/lib/types";
+import type { Novel, NovelProgress } from "@/lib/types";
 import { useLanguage } from "./LanguageProvider";
 import { NovelCard } from "./NovelCard";
+import { useLibraryNovels } from "./useLibraryNovels";
 import { useMounted } from "./useMounted";
+
+function matchesQuery(novel: Novel, query: string): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  const haystack = [
+    novel.title.ar,
+    novel.title.en,
+    novel.author.ar,
+    novel.author.en,
+    novel.genre.ar,
+    novel.genre.en,
+    novel.synopsis.ar,
+    novel.synopsis.en,
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(needle);
+}
 
 export function Catalog() {
   const { locale, t } = useLanguage();
   const [query, setQuery] = useState("");
   const mounted = useMounted();
-  const results = searchNovels(query);
+  const { novels, find } = useLibraryNovels();
+  const results = novels.filter((novel) => matchesQuery(novel, query));
   const store = mounted ? readStore() : null;
   const last = store?.last;
-  const lastNovel = last ? novels.find((novel) => novel.slug === last.novelSlug) : undefined;
+  const lastNovel = last ? find(last.novelSlug) : undefined;
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8">
@@ -27,11 +46,15 @@ export function Catalog() {
         <h1 className="mt-2 font-display text-4xl leading-tight">{t("brand")}</h1>
         <p className="mt-3 text-lg text-[color:var(--muted)]">{t("tagline")}</p>
         <p className="mt-2 text-sm text-[color:var(--muted)]">{t("originalNote")}</p>
+        <Link
+          href="/import"
+          className="mt-4 inline-block rounded-full border border-[color:var(--line)] px-4 py-2 text-sm"
+        >
+          {t("importJson")}
+        </Link>
       </section>
 
-      {last && lastNovel ? (
-        <ContinueBanner progress={last} />
-      ) : null}
+      {last && lastNovel ? <ContinueBanner progress={last} novel={lastNovel} /> : null}
 
       <label className="mb-6 block">
         <span className="sr-only">{t("search")}</span>
@@ -65,14 +88,12 @@ export function Catalog() {
   );
 }
 
-function ContinueBanner({ progress }: { progress: NovelProgress }) {
+function ContinueBanner({ progress, novel }: { progress: NovelProgress; novel: Novel }) {
   const { locale, t } = useLanguage();
-  const novel = useMemo(
-    () => novels.find((item) => item.slug === progress.novelSlug),
-    [progress.novelSlug],
+  const chapter = useMemo(
+    () => novel.chapters.find((item) => item.id === progress.chapterId) ?? novel.chapters[0],
+    [novel, progress.chapterId],
   );
-  if (!novel) return null;
-  const chapter = novel.chapters.find((item) => item.id === progress.chapterId) ?? novel.chapters[0];
   const href = `/n/${novel.slug}/${chapter.id}`;
 
   return (
