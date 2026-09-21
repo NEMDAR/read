@@ -1,13 +1,8 @@
 import { ChapterLoader } from "@/components/ChapterLoader";
-import { getChapter, getNovel, novels } from "@/content";
+import { getChapter, getNovel } from "@/content";
 
 export const dynamicParams = true;
-
-export function generateStaticParams() {
-  return novels.flatMap((novel) =>
-    novel.chapters.map((chapter) => ({ slug: novel.slug, chapter: chapter.id })),
-  );
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,

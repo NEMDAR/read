@@ -1,11 +1,8 @@
 import { NovelLoader } from "@/components/NovelLoader";
-import { getNovel, novels } from "@/content";
+import { getNovel } from "@/content";
 
 export const dynamicParams = true;
-
-export function generateStaticParams() {
-  return novels.map((novel) => ({ slug: novel.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

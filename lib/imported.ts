@@ -10,28 +10,48 @@ function emit() {
 }
 
 export function subscribeImported(listener: () => void) {
-  listeners.add(listener);
+  const wrapped = () => {
+    cachedRaw = undefined;
+    listener();
+  };
+  listeners.add(wrapped);
   if (typeof window !== "undefined") {
-    window.addEventListener("storage", listener);
+    window.addEventListener("storage", wrapped);
   }
   return () => {
-    listeners.delete(listener);
+    listeners.delete(wrapped);
     if (typeof window !== "undefined") {
-      window.removeEventListener("storage", listener);
+      window.removeEventListener("storage", wrapped);
     }
   };
 }
 
+const EMPTY: Novel[] = [];
+let cachedRaw: string | null | undefined;
+let cached: Novel[] = EMPTY;
+
 export function readImported(): Novel[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return EMPTY;
   try {
     const raw = window.localStorage.getItem(IMPORTED_KEY);
-    if (!raw) return [];
+    if (raw === cachedRaw) return cached;
+    cachedRaw = raw;
+    if (!raw) {
+      cached = EMPTY;
+      return cached;
+    }
     const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item): item is Novel => Boolean(item && typeof item === "object" && "slug" in item && "chapters" in item));
+    if (!Array.isArray(parsed)) {
+      cached = EMPTY;
+      return cached;
+    }
+    cached = parsed.filter((item): item is Novel =>
+      Boolean(item && typeof item === "object" && "slug" in item && "chapters" in item),
+    );
+    return cached;
   } catch {
-    return [];
+    cached = EMPTY;
+    return cached;
   }
 }
 
@@ -53,6 +73,7 @@ export function addImported(novels: Novel[]): Novel[] {
   }
   const next = [...added, ...current];
   window.localStorage.setItem(IMPORTED_KEY, JSON.stringify(next));
+  cachedRaw = undefined;
   emit();
   return added;
 }
@@ -60,6 +81,7 @@ export function addImported(novels: Novel[]): Novel[] {
 export function removeImported(slug: string): void {
   const next = readImported().filter((novel) => novel.slug !== slug);
   window.localStorage.setItem(IMPORTED_KEY, JSON.stringify(next));
+  cachedRaw = undefined;
   emit();
 }
 
